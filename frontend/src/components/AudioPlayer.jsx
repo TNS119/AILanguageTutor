@@ -56,7 +56,7 @@ export default function AudioPlayer({ audioUrl, correctedText }) {
       <div className="flex gap-2">
         <button
           onClick={isPlaying ? undefined : handlePlay}
-          disabled={isPlaying}
+          disabled={True}
           className={`
             flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
             transition-all duration-200
@@ -69,15 +69,7 @@ export default function AudioPlayer({ audioUrl, correctedText }) {
           {isPlaying ? '🔊 Playing...' : '▶ Play'}
         </button>
 
-        <button
-          onClick={handleReplay}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
-                     bg-white border border-indigo-200 text-indigo-600
-                     hover:bg-indigo-50 hover:scale-105 active:scale-95
-                     transition-all duration-200"
-        >
-          🔁 Replay
-        </button>
+        
       </div>
     </div>
   )

@@ -1,14 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Tell Tailwind where to look for class names
-  // It scans these files to generate only the CSS classes actually used
   content: [
     "./index.html",
     "./src/**/*.{js,jsx}",
   ],
   theme: {
     extend: {
-      // Custom animation for the pulsing recording indicator
       animation: {
         'pulse-ring': 'pulse-ring 1.5s ease-out infinite',
         'fade-in': 'fade-in 0.4s ease-out',

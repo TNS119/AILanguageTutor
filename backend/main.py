@@ -19,36 +19,23 @@ from backend.database.session_store import save_session, get_progress
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Starting AI Voice Language Tutor backend...")
-
+    logger.info("Initializing application resources...")
     os.makedirs(AUDIO_DIR, exist_ok=True)
-    logger.info(f"Temp audio directory: {AUDIO_DIR}")
-
     initialize_database()
-
-    logger.info("✅ Server ready! Visit /docs for the API documentation.")
-
     yield
-
-    logger.info("Shutting down — cleaning up temporary audio files...")
+    logger.info("Cleaning up temporary audio assets...")
     for temp_file in Path(AUDIO_DIR).glob("*"):
         cleanup_file(str(temp_file))
-    logger.info("Shutdown complete.")
 
 
 app = FastAPI(
     title="AI Voice Language Tutor",
-    description=(
-        "A Duolingo-style English speaking practice app. "
-        "Speak a sentence → get grammar feedback → hear the correction."
-    ),
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -62,15 +49,15 @@ app.add_middleware(
 )
 
 
-@app.get("/health", tags=["System"])
+@app.get("/health")
 def health_check():
-    return {"status": "ok", "message": "AI Voice Language Tutor is running"}
+    return {"status": "ok"}
 
 
-@app.post("/api/analyze", tags=["Core Pipeline"])
+@app.post("/api/analyze")
 async def analyze_speech(
-    audio: UploadFile = File(..., description="Recorded audio file (WebM, WAV, MP3, etc.)"),
-    session_id: str = Form(default=None, description="Browser session UUID for progress tracking"),
+    audio: UploadFile = File(...),
+    session_id: str = Form(default=None),
 ):
     request_id = str(uuid.uuid4())[:8]
     audio_path = os.path.join(AUDIO_DIR, f"{request_id}_input.webm")
@@ -81,19 +68,12 @@ async def analyze_speech(
         with open(audio_path, "wb") as f:
             f.write(audio_bytes)
 
-        logger.info(f"[{request_id}] Audio received: {len(audio_bytes) / 1024:.1f} KB")
-
         validate_audio_file(audio_path, max_size_mb=MAX_AUDIO_SIZE_MB)
 
         stt_result = transcribe_audio(audio_path)
         transcribed_text = stt_result["text"]
-        logger.info(f"[{request_id}] Transcribed: '{transcribed_text}'")
 
         feedback = analyze_grammar(transcribed_text)
-        logger.info(
-            f"[{request_id}] Score: {feedback['overall_score']}/10, Vocab: {feedback.get('vocabulary_score', 8)}/10, "
-            f"Confidence: {feedback.get('confidence_score', 8)}/10, Errors: {len(feedback['errors'])}"
-        )
 
         await generate_speech(feedback["corrected_text"], tts_path)
 
@@ -133,24 +113,24 @@ async def analyze_speech(
         raise HTTPException(status_code=500, detail=str(e))
 
     except Exception as e:
-        logger.error(f"[{request_id}] Unexpected error: {e}", exc_info=True)
+        logger.error(f"[{request_id}] Internal server error: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="Something went wrong while processing your audio. Please try again."
+            detail="Failed to process audio request."
         )
 
     finally:
         cleanup_file(audio_path)
 
 
-@app.get("/api/audio/{request_id}", tags=["Core Pipeline"])
+@app.get("/api/audio/{request_id}")
 def serve_audio(request_id: str):
     audio_path = os.path.join(AUDIO_DIR, f"{request_id}_tts.mp3")
 
     if not os.path.exists(audio_path):
         raise HTTPException(
             status_code=404,
-            detail="Audio file not found. It may have expired — please try again."
+            detail="Requested audio recording is unavailable or has expired."
         )
 
     return FileResponse(
@@ -160,11 +140,10 @@ def serve_audio(request_id: str):
     )
 
 
-@app.get("/api/progress/{session_id}", tags=["Progress Tracking"])
+@app.get("/api/progress/{session_id}")
 def get_session_progress(session_id: str):
     try:
-        progress = get_progress(session_id)
-        return JSONResponse(content=progress)
+        return JSONResponse(content=get_progress(session_id))
     except Exception as e:
-        logger.error(f"Error fetching progress for session {session_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Could not retrieve progress data.")
+        logger.error(f"Failed to fetch progress metrics for session {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Could not retrieve progress metrics.")
