@@ -1,0 +1,45 @@
+# ── Python ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual Environment ──────────────────
+venv/
+env/
+.venv/
+
+# ── Environment Variables (NEVER commit!) ─
+.env
+
+# ── Temporary Audio Files ───────────────
+temp_audio/
+
+# ── Database ─────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── IDE & OS ─────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── Node / Frontend ──────────────────────
+node_modules/
+frontend/dist/
+frontend/.env.local
+
+# ── Testing ──────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+
+# ── Logs ─────────────────────────────────
+*.log
