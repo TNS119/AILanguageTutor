@@ -1,6 +1,6 @@
 import logging
 from groq import Groq
-from backend.config import GROQ_API_KEY, WHISPER_MODEL, TARGET_LANGUAGE_CODE
+from config import GROQ_API_KEY, WHISPER_MODEL, TARGET_LANGUAGE_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -30,5 +30,4 @@ def transcribe_audio(audio_path: str) -> dict:
 
     return {
         "text": transcribed_text,
-        "language": TARGET_LANGUAGE_CODE,
     }

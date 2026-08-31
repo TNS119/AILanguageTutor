@@ -2,7 +2,7 @@ import json
 import re
 import logging
 from groq import Groq
-from backend.config import GROQ_API_KEY, LLM_MODEL, TARGET_LANGUAGE
+from config import GROQ_API_KEY, LLM_MODEL, TARGET_LANGUAGE
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,6 @@ def _validate_response(data: dict) -> dict:
         if field not in data:
             raise ValueError(f"LLM response is missing required field: '{field}'")
 
-    # Filter out pure written spelling/formatting artifacts (e.g. pm -> p.m.)
     if isinstance(data.get("errors"), list):
         filtered_errors = [e for e in data["errors"] if not _is_spelling_or_formatting_artifact(e)]
         data["errors"] = filtered_errors
@@ -112,8 +111,6 @@ def _validate_response(data: dict) -> dict:
     data["is_correct"] = len(data["errors"]) == 0
     num_errors = len(data["errors"])
 
-    # Fair scoring calibration:
-    # 0 errors = 10, 1 error = 9, 2 errors = 8, 3 errors = 7, 4+ errors = 6 or below
     if num_errors == 0:
         base_score = 10
     elif num_errors == 1:
@@ -125,7 +122,6 @@ def _validate_response(data: dict) -> dict:
     else:
         base_score = max(1, 6 - (num_errors - 4))
 
-    # Vocabulary accountability adjustment
     vocab_score = data.get("vocabulary_score")
     if vocab_score is not None:
         vocab_score = max(1, min(10, int(vocab_score)))

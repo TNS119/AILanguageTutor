@@ -8,13 +8,13 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from backend.config import AUDIO_DIR, MAX_AUDIO_SIZE_MB
-from backend.services.stt_service import transcribe_audio
-from backend.services.llm_service import analyze_grammar
-from backend.services.tts_service import generate_speech
-from backend.utils.audio_utils import validate_audio_file, cleanup_file
-from backend.database.db import initialize_database
-from backend.database.session_store import save_session, get_progress
+from config import AUDIO_DIR, MAX_AUDIO_SIZE_MB
+from services.stt_service import transcribe_audio
+from services.llm_service import analyze_grammar
+from services.tts_service import generate_speech
+from utils.audio_utils import validate_audio_file, cleanup_file
+from database.db import initialize_database
+from database.session_store import save_session, get_progress
 
 logging.basicConfig(
     level=logging.INFO,
