@@ -14,7 +14,6 @@ AUDIO_DIR: str = os.path.abspath(
 )
 
 MAX_AUDIO_SIZE_MB: int = int(os.getenv("MAX_AUDIO_SIZE_MB", "10"))
-
 TTS_VOICE: str = os.getenv("TTS_VOICE", "en-US-JennyNeural")
 
 TARGET_LANGUAGE: str = "English"

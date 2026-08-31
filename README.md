@@ -1,187 +1,126 @@
-# 🎙️ AI Voice Language Tutor
+# AI Voice Language Tutor — Voice Practice App
 
-> **Project 4 — LLMs Meet Speech Take-Home Assessment**  
-> An English speaking practice app powered by Groq Whisper (STT), LLaMA (LLM), and Microsoft Edge TTS.
+A complete, interactive English speaking practice application built on the **LLMs Meet Speech** concept.
 
 ---
 
 ## 📋 What It Does
 
-Speak an English sentence → get instant grammar feedback → hear the corrected version spoken back.
-
-```
-Your Voice → Groq Whisper (transcription) → Groq LLaMA (grammar analysis) → Edge-TTS (audio) → Your Ears
-```
-
-**Example:**  
-🗣️ You say: *"She don't like coffee"*  
-✅ App corrects: *"She doesn't like coffee"*  
-🔊 Plays back the corrected sentence
-
----
-
-## 🏗️ Architecture
-
-```
-AILanguageTutor/
-├── backend/                    # Python + FastAPI
-│   ├── main.py                 # API routes: /api/analyze, /api/audio, /api/progress
-│   ├── config.py               # All settings (models, voices, limits)
-│   ├── services/
-│   │   ├── stt_service.py      # Groq Whisper API (Speech-to-Text)
-│   │   ├── llm_service.py      # Groq LLaMA (grammar + vocabulary analysis)
-│   │   └── tts_service.py      # Microsoft Edge TTS (text-to-speech)
-│   ├── database/
-│   │   ├── db.py               # SQLite setup
-│   │   └── session_store.py    # Progress tracking (stretch goal)
-│   └── utils/
-│       └── audio_utils.py      # File validation and cleanup
-│
-├── frontend/                   # React + Tailwind CSS (Vite)
-│   └── src/
-│       ├── App.jsx             # Root component — full state machine
-│       ├── components/         # RecordButton, FeedbackCard, AudioPlayer, etc.
-│       ├── hooks/              # useAudioRecorder, useSession
-│       └── services/api.js     # All backend HTTP calls
-│
-└── tests/                      # Pytest unit tests
-```
+- **Voice Mode**: Microphone $\rightarrow$ Speech-to-Text (Groq Whisper) $\rightarrow$ Spoken Evaluation (Groq LLaMA/Qwen) $\rightarrow$ Text-to-Speech (Edge TTS) $\rightarrow$ Audio Playback & Feedback
+- **Spoken Error Filtering**: Ignores written transcription artifacts (e.g. `pm` vs `p.m.`, capitalization) to focus strictly on real spoken grammar, vocabulary richness, and speaking confidence.
+- **Progress Tracking & History**: Evaluates Vocabulary Score (1–10) and Speaking Confidence (1–10) alongside Overall Skill Level in an interactive split-screen dashboard.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| **STT** | Groq Whisper API (`whisper-large-v3`) | Fast, accurate, free tier |
-| **LLM** | Groq LLaMA (`llama-3.1-8b-instant`) | Structured JSON output, fast, free |
-| **TTS** | Microsoft Edge TTS | Free, natural voices, no API key |
-| **Backend** | Python + FastAPI | Async, auto-docs, clean structure |
-| **Frontend** | React + Tailwind CSS + Vite | Fast builds, component-based UI |
-| **Database** | SQLite | Zero setup, progress tracking |
+| Component | Technology | Description |
+|---|---|---|
+| **STT** | Groq Whisper (`whisper-large-v3`) | Fast, accurate speech transcription |
+| **LLM** | Groq LLaMA / Qwen (`qwen/qwen3.8-27b`) | Evaluates spoken grammar, vocabulary, and confidence |
+| **TTS** | Microsoft Edge TTS (`en-US-JennyNeural`) | Free, natural text-to-speech correction audio |
+| **Backend** | Python + FastAPI | Clean REST API with SQLite session persistence |
+| **Frontend** | React + Vite + Tailwind CSS | Responsive split-screen UI with sidebar dashboard |
 
 ---
 
-## ⚡ Quick Start (Local Development)
+## ⚡ Local Development
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- A **Groq API key** (free at [console.groq.com](https://console.groq.com/keys))
-
-### 1. Clone and set up the backend
+### 1. Backend Setup
 
 ```bash
-# Create and activate a virtual environment
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+# Navigate to backend
+cd backend
 
 # Install Python dependencies
 pip install -r requirements.txt
-```
 
-### 2. Configure your API key
+# Copy environment variables template and add your Groq API key
+cp .env.example .env
+
+# Run the FastAPI server
+uvicorn main:app --reload --port 8000
+```
+- Backend runs at: `http://localhost:8000`
+- Interactive API Docs: `http://localhost:8000/docs`
+
+### 2. Frontend Setup
 
 ```bash
-# Copy the template
-copy .env.example .env
-
-# Open .env and add your Groq key:
-# GROQ_API_KEY=gsk_your_actual_key_here
-```
-
-### 3. Run the backend
-
-```bash
-uvicorn backend.main:app --reload
-```
-Backend runs at: **http://localhost:8000**  
-Auto-generated API docs: **http://localhost:8000/docs**
-
-### 4. Set up and run the frontend
-
-```bash
+# Navigate to frontend
 cd frontend
+
+# Install Node dependencies
 npm install
+
+# Start Vite development server
 npm run dev
 ```
-Frontend runs at: **http://localhost:5173**
+- Frontend runs at: `http://localhost:5173`
 
 ---
 
-## 🧪 Running Tests
+## 🔑 Environment Variables
 
-```bash
-# From the project root (with venv activated)
-pytest tests/ -v
+Configure these variables in `backend/.env` or on your hosting provider:
+
+```env
+GROQ_API_KEY=gsk_XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+WHISPER_MODEL=whisper-large-v3
+LLM_MODEL=qwen/qwen3.8-27b
+MAX_AUDIO_SIZE_MB=10
+TTS_VOICE=en-US-JennyNeural
 ```
 
 ---
 
 ## 🚀 Deployment
 
-### Backend → Render (Free Tier)
-1. Push code to GitHub
-2. Create a **Web Service** on [render.com](https://render.com)
-3. Set:
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-4. Add **Environment Variables**: `GROQ_API_KEY=your_key`
+### Backend $\rightarrow$ Render
+1. Create a **Web Service** on [Render](https://render.com).
+2. Set **Root Directory**: `backend`
+3. Set **Build Command**: `pip install -r requirements.txt`
+4. Set **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. Add Environment Variable: `GROQ_API_KEY=your_groq_key`
 
-### Frontend → Vercel (Free Tier)
-1. Import GitHub repo at [vercel.com](https://vercel.com)
-2. Set framework to **Vite**
-3. Add **Environment Variable**: `VITE_API_URL=https://your-render-app.onrender.com`
-4. Deploy
-
----
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Server health check |
-| `POST` | `/api/analyze` | Full pipeline: audio → transcript → feedback → TTS |
-| `GET` | `/api/audio/{id}` | Serve generated TTS MP3 audio |
-| `GET` | `/api/progress/{session_id}` | Learner progress data (stretch goal) |
+### Frontend $\rightarrow$ Vercel
+1. Import project on [Vercel](https://vercel.com).
+2. Set **Root Directory**: `frontend`
+3. Set Framework Preset: `Vite`
+4. Add Environment Variable: `VITE_API_URL=https://your-backend.onrender.com`
 
 ---
 
-## 🎯 Approach & Design Decisions
+## 🏗️ Project Architecture
 
-### 1. Thoughtful LLM Prompting
-The grammar analysis prompt (`llm_service.py`) uses:
-- **Schema-in-prompt**: The exact JSON schema is embedded, ensuring parseable output
-- **Temperature 0.3**: Low enough for consistent corrections, slight variation for encouragement
-- **`response_format={"type": "json_object"}`**: Forces JSON mode on Groq
-- **Regex fallback**: Extracts JSON even if the model wraps it in markdown fences
-- **Field validation**: Catches incomplete responses and fills safe defaults
+```
+AILanguageTutor/
+├── backend/
+│   ├── main.py             # FastAPI entrypoint (/api/analyze, /api/audio, /api/progress)
+│   ├── config.py           # Centralized environment & model settings
+│   ├── requirements.txt    # Backend Python dependencies
+│   ├── .env.example        # Environment variables template
+│   ├── services/
+│   │   ├── stt_service.py  # Groq Whisper API integration
+│   │   ├── llm_service.py  # Spoken evaluation & score calibration
+│   │   └── tts_service.py  # Microsoft Edge TTS audio generation
+│   ├── database/
+│   │   ├── db.py           # SQLite connection & schema initialization
+│   │   └── session_store.py# Practice history & progress analytics
+│   └── utils/
+│       └── audio_utils.py  # Audio file validation & temp asset cleanup
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx         # Top-level application container
+│   │   ├── pages/
+│   │   │   └── Home.jsx    # Main voice practice workspace page
+│   │   ├── components/     # ProgressChart, RecordButton, FeedbackCard, ScoreBadge, AudioPlayer
+│   │   ├── hooks/          # useAudioRecorder, useSession
+│   │   └── services/api.js # API client for backend communication
+│   ├── vercel.json         # Vercel SPA routing configuration
+│   └── package.json        # Frontend dependencies & scripts
+│
+└── render.yaml             # Render cloud deployment blueprint
+```
 
-### 2. Service Separation
-Each concern lives in its own file (`stt_service.py`, `llm_service.py`, `tts_service.py`).
-This means you can swap the TTS provider (e.g., to ElevenLabs) by changing ONE file.
-
-### 3. No Login Required (Stretch Goal)
-Session tracking uses a browser-generated UUID stored in `localStorage`.
-No account needed — the session persists across page refreshes.
-
-### 4. React Custom Hooks
-`useAudioRecorder` wraps the complex MediaRecorder API. `RecordButton` just calls
-`startRecording()` and `stopRecording()` — separation of logic and UI.
-
----
-
-## ⚠️ Known Limitations
-
-- **Groq free tier rate limits**: If many users use the app simultaneously, you may hit RPM limits (adjustable by upgrading Groq plan)
-- **Audio format**: The browser outputs WebM/Opus. Groq Whisper accepts WebM directly — no conversion needed
-- **TTS latency**: Edge-TTS takes ~0.5-1 second to generate audio (network dependent)
-- **Session persistence**: Progress is stored per-browser. Clearing localStorage resets progress
-- **English only**: Currently configured for English only (configurable in `config.py`)
-- **Temp audio cleanup**: Files are cleaned up on server restart; long-running servers may accumulate files (manageable with a scheduled cleanup)
-
----
-
-## 📄 License
-MIT License — free to use for educational purposes.
