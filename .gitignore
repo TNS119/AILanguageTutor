@@ -40,6 +40,7 @@ frontend/.env.local
 .pytest_cache/
 htmlcov/
 .coverage
+tests/
 
 # ── Logs ─────────────────────────────────
 *.log

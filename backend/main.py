@@ -4,11 +4,11 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from config import AUDIO_DIR, MAX_AUDIO_SIZE_MB
+from config import AUDIO_DIR, MAX_AUDIO_SIZE_MB, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
 from services.stt_service import transcribe_audio
 from services.llm_service import analyze_grammar
 from services.tts_service import generate_speech
@@ -54,11 +54,30 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/languages")
+def get_supported_languages():
+    languages = [
+        {
+            "code": info["code"],
+            "name": info["name"],
+            "native_name": info["native_name"],
+            "sample_phrases": info["sample_phrases"],
+        }
+        for info in SUPPORTED_LANGUAGES.values()
+    ]
+    return JSONResponse(content={"languages": languages, "default": DEFAULT_LANGUAGE})
+
+
 @app.post("/api/analyze")
 async def analyze_speech(
     audio: UploadFile = File(...),
     session_id: str = Form(default=None),
+    language: str = Form(default=DEFAULT_LANGUAGE),
 ):
+    selected_lang = language.lower().strip()
+    if selected_lang not in SUPPORTED_LANGUAGES:
+        selected_lang = DEFAULT_LANGUAGE
+
     request_id = str(uuid.uuid4())[:8]
     audio_path = os.path.join(AUDIO_DIR, f"{request_id}_input.webm")
     tts_path = os.path.join(AUDIO_DIR, f"{request_id}_tts.mp3")
@@ -70,12 +89,12 @@ async def analyze_speech(
 
         validate_audio_file(audio_path, max_size_mb=MAX_AUDIO_SIZE_MB)
 
-        stt_result = transcribe_audio(audio_path)
+        stt_result = transcribe_audio(audio_path, language_code=selected_lang)
         transcribed_text = stt_result["text"]
 
-        feedback = analyze_grammar(transcribed_text)
+        feedback = analyze_grammar(transcribed_text, language_code=selected_lang)
 
-        await generate_speech(feedback["corrected_text"], tts_path)
+        await generate_speech(feedback["corrected_text"], tts_path, language_code=selected_lang)
 
         if session_id and session_id.strip():
             save_session(
@@ -89,12 +108,16 @@ async def analyze_speech(
                 error_count=len(feedback["errors"]),
                 errors=feedback["errors"],
                 encouragement=feedback.get("encouragement", ""),
+                language=selected_lang,
+                english_translation=feedback.get("english_translation", ""),
             )
 
         return JSONResponse(content={
             "request_id": request_id,
+            "language": selected_lang,
             "transcribed_text": transcribed_text,
             "corrected_text": feedback["corrected_text"],
+            "english_translation": feedback.get("english_translation", ""),
             "is_correct": feedback["is_correct"],
             "overall_score": feedback["overall_score"],
             "vocabulary_score": feedback.get("vocabulary_score", 8),
@@ -141,9 +164,9 @@ def serve_audio(request_id: str):
 
 
 @app.get("/api/progress/{session_id}")
-def get_session_progress(session_id: str):
+def get_session_progress(session_id: str, language: str = Query(default=None)):
     try:
-        return JSONResponse(content=get_progress(session_id))
+        return JSONResponse(content=get_progress(session_id, language=language))
     except Exception as e:
         logger.error(f"Failed to fetch progress metrics for session {session_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Could not retrieve progress metrics.")

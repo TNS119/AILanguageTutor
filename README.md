@@ -1,26 +1,29 @@
-# AI Voice Language Tutor — Voice Practice App
+# AI Voice Language Tutor — Multilingual Speaking Practice App
 
-A complete, interactive English speaking practice application built on the **LLMs Meet Speech** concept.
+A production-grade, interactive speaking practice application with full multilingual support for **English**, **हिन्दी (Hindi)**, and **తెలుగు (Telugu)** built on the **LLMs Meet Speech** concept.
 
 ---
 
 ## 📋 What It Does
 
-- **Voice Mode**: Microphone $\rightarrow$ Speech-to-Text (Groq Whisper) $\rightarrow$ Spoken Evaluation (Groq LLaMA/Qwen) $\rightarrow$ Text-to-Speech (Edge TTS) $\rightarrow$ Audio Playback & Feedback
-- **Spoken Error Filtering**: Ignores written transcription artifacts (e.g. `pm` vs `p.m.`, capitalization) to focus strictly on real spoken grammar, vocabulary richness, and speaking confidence.
-- **Progress Tracking & History**: Evaluates Vocabulary Score (1–10) and Speaking Confidence (1–10) alongside Overall Skill Level in an interactive split-screen dashboard.
+- **Multilingual Voice Practice**: Switch effortlessly between **English**, **Hindi (Devanagari)**, and **Telugu** via the Header Navbar selector.
+- **Voice Pipeline**: Microphone $\rightarrow$ Speech-to-Text (Groq Whisper with language hint) $\rightarrow$ Linguistic Evaluation (Groq LLaMA/Qwen) $\rightarrow$ Natural Text-to-Speech (Microsoft Edge TTS Neural) $\rightarrow$ Audio Playback.
+- **Option A Bilingual Explanations**: When practicing in Hindi or Telugu, grammar errors are broken down with both native script corrections and simple English explanations for clear comprehension.
+- **Spoken Error Filtering**: Focuses strictly on real spoken errors (verb tense/aspect, gender-number agreement, case markers/postpositions, word order) while ignoring transcription artifacts.
+- **Progress Tracking & Analytics**: Evaluates Overall Score (1–10), Vocabulary Richness (1–10), and Speaking Confidence (1–10) with historical logs tagged by language.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Multilingual Tech Stack
 
-| Component | Technology | Description |
-|---|---|---|
-| **STT** | Groq Whisper (`whisper-large-v3`) | Fast, accurate speech transcription |
-| **LLM** | Groq LLaMA / Qwen (`qwen/qwen3.8-27b`) | Evaluates spoken grammar, vocabulary, and confidence |
-| **TTS** | Microsoft Edge TTS (`en-US-JennyNeural`) | Free, natural text-to-speech correction audio |
-| **Backend** | Python + FastAPI | Clean REST API with SQLite session persistence |
-| **Frontend** | React + Vite + Tailwind CSS | Responsive split-screen UI with sidebar dashboard |
+| Component | English (`en`) | Hindi (`hi`) | Telugu (`te`) |
+|---|---|---|---|
+| **STT** | Groq Whisper (`en`) | Groq Whisper (`hi`) | Groq Whisper (`te`) |
+| **LLM** | Groq LLaMA/Qwen (`en` rules) | Groq LLaMA/Qwen (काल, लिंग, कारक) | Groq LLaMA/Qwen (విభక్తులు, కాలాలు) |
+| **TTS** | `en-US-JennyNeural` | `hi-IN-SwaraNeural` | `te-IN-ShrutiNeural` |
+| **Feedback Mode** | Direct English explanation | Bilingual (Hindi + English) | Bilingual (Telugu + English) |
+| **Backend** | Python + FastAPI | Python + FastAPI | Python + FastAPI |
+| **Frontend** | React + Vite + Tailwind CSS (Impeccable craft with Devanagari & Telugu font tuning) |
 
 ---
 
@@ -96,17 +99,17 @@ TTS_VOICE=en-US-JennyNeural
 ```
 AILanguageTutor/
 ├── backend/
-│   ├── main.py             # FastAPI entrypoint (/api/analyze, /api/audio, /api/progress)
-│   ├── config.py           # Centralized environment & model settings
+│   ├── main.py             # FastAPI entrypoint (/api/analyze, /api/languages, /api/progress)
+│   ├── config.py           # SUPPORTED_LANGUAGES registry (en, hi, te) & model configurations
 │   ├── requirements.txt    # Backend Python dependencies
 │   ├── .env.example        # Environment variables template
 │   ├── services/
-│   │   ├── stt_service.py  # Groq Whisper API integration
-│   │   ├── llm_service.py  # Spoken evaluation & score calibration
-│   │   └── tts_service.py  # Microsoft Edge TTS audio generation
+│   │   ├── stt_service.py  # Groq Whisper API integration with language hints
+│   │   ├── llm_service.py  # Multilingual spoken evaluation & bilingual Option A prompts
+│   │   └── tts_service.py  # Microsoft Edge TTS neural voice router
 │   ├── database/
-│   │   ├── db.py           # SQLite connection & schema initialization
-│   │   └── session_store.py# Practice history & progress analytics
+│   │   ├── db.py           # SQLite connection & schema migrations (language tag)
+│   │   └── session_store.py# Language-filtered practice history & progress analytics
 │   └── utils/
 │       └── audio_utils.py  # Audio file validation & temp asset cleanup
 │
@@ -114,13 +117,13 @@ AILanguageTutor/
 │   ├── src/
 │   │   ├── App.jsx         # Top-level application container
 │   │   ├── pages/
-│   │   │   └── Home.jsx    # Main voice practice workspace page
-│   │   ├── components/     # ProgressChart, RecordButton, FeedbackCard, ScoreBadge, AudioPlayer
+│   │   │   └── Home.jsx    # Impeccable polished multilingual workspace
+│   │   ├── components/     # LanguageSelector, FeedbackCard, ProgressChart, RecordButton, ScoreBadge
 │   │   ├── hooks/          # useAudioRecorder, useSession
-│   │   └── services/api.js # API client for backend communication
+│   │   └── services/api.js # API client with dynamic language parameters
 │   ├── vercel.json         # Vercel SPA routing configuration
 │   └── package.json        # Frontend dependencies & scripts
 │
+├── tests/                  # Automated pytest suite (STT, LLM bilingual feedback, TTS routing)
 └── render.yaml             # Render cloud deployment blueprint
 ```
-

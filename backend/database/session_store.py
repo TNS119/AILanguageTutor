@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from database.db import get_connection
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,8 @@ def save_session(
     error_count: int,
     errors: List[Dict[str, Any]],
     encouragement: str,
+    language: str = "en",
+    english_translation: str = "",
 ) -> int:
     conn = get_connection()
     try:
@@ -25,8 +27,8 @@ def save_session(
             INSERT INTO sessions (
                 session_id, original_text, corrected_text, score,
                 vocabulary_score, confidence_score, is_correct, error_count,
-                errors_json, encouragement
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                errors_json, encouragement, language, english_translation
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session_id,
@@ -39,21 +41,22 @@ def save_session(
                 error_count,
                 json.dumps(errors),
                 encouragement,
+                language,
+                english_translation,
             ),
         )
         conn.commit()
         record_id = cursor.lastrowid
-        logger.info(f"Saved session record ID={record_id} for session_id='{session_id}'")
+        logger.info(f"Saved session record ID={record_id} for session_id='{session_id}' [{language}]")
         return record_id
     finally:
         conn.close()
 
 
-def get_progress(session_id: str) -> Dict[str, Any]:
+def get_progress(session_id: str, language: Optional[str] = None) -> Dict[str, Any]:
     conn = get_connection()
     try:
-        cursor = conn.execute(
-            """
+        query_stats = """
             SELECT
                 COUNT(*) as total_sessions,
                 AVG(score) as average_score,
@@ -62,9 +65,14 @@ def get_progress(session_id: str) -> Dict[str, Any]:
                 SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as perfect_count
             FROM sessions
             WHERE session_id = ?
-            """,
-            (session_id,),
-        )
+        """
+        params_stats = [session_id]
+
+        if language and language != "all":
+            query_stats += " AND language = ?"
+            params_stats.append(language)
+
+        cursor = conn.execute(query_stats, tuple(params_stats))
         stats = dict(cursor.fetchone())
 
         total = stats["total_sessions"] or 0
@@ -73,17 +81,49 @@ def get_progress(session_id: str) -> Dict[str, Any]:
         avg_conf = round(stats["average_confidence_score"] or 0, 1)
         perfect = stats["perfect_count"] or 0
 
-        cursor = conn.execute(
+        # Query language breakdown
+        breakdown_cursor = conn.execute(
             """
-            SELECT id, original_text, corrected_text, score, vocabulary_score, confidence_score,
-                   is_correct, error_count, errors_json, encouragement, created_at
+            SELECT
+                COALESCE(language, 'en') as lang_code,
+                COUNT(*) as total_sessions,
+                AVG(score) as average_score,
+                AVG(vocabulary_score) as average_vocab_score,
+                AVG(confidence_score) as average_confidence_score,
+                SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as perfect_count
             FROM sessions
             WHERE session_id = ?
-            ORDER BY id DESC
-            LIMIT 10
+            GROUP BY COALESCE(language, 'en')
             """,
             (session_id,),
         )
+        breakdown_rows = breakdown_cursor.fetchall()
+        languages_breakdown = {}
+        for row in breakdown_rows:
+            r = dict(row)
+            languages_breakdown[r["lang_code"]] = {
+                "total_sessions": r["total_sessions"] or 0,
+                "average_score": round(r["average_score"] or 0, 1),
+                "average_vocab_score": round(r["average_vocab_score"] or 0, 1),
+                "average_confidence_score": round(r["average_confidence_score"] or 0, 1),
+                "perfect_count": r["perfect_count"] or 0,
+            }
+
+        query_recent = """
+            SELECT id, original_text, corrected_text, score, vocabulary_score, confidence_score,
+                   is_correct, error_count, errors_json, encouragement, language, english_translation, created_at
+            FROM sessions
+            WHERE session_id = ?
+        """
+        params_recent = [session_id]
+
+        if language and language != "all":
+            query_recent += " AND language = ?"
+            params_recent.append(language)
+
+        query_recent += " ORDER BY id DESC LIMIT 15"
+
+        cursor = conn.execute(query_recent, tuple(params_recent))
         recent_rows = [dict(row) for row in cursor.fetchall()]
 
         recent_sessions = []
@@ -103,6 +143,7 @@ def get_progress(session_id: str) -> Dict[str, Any]:
             "average_confidence_score": avg_conf,
             "perfect_count": perfect,
             "improvement_trend": trend,
+            "languages_breakdown": languages_breakdown,
             "recent_sessions": recent_sessions,
         }
     finally:

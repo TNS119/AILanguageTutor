@@ -1,20 +1,22 @@
 import logging
 from groq import Groq
-from config import GROQ_API_KEY, WHISPER_MODEL, TARGET_LANGUAGE_CODE
+from config import GROQ_API_KEY, WHISPER_MODEL, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
 
 logger = logging.getLogger(__name__)
 
 client = Groq(api_key=GROQ_API_KEY)
 
 
-def transcribe_audio(audio_path: str) -> dict:
-    logger.info(f"Transcribing audio: {audio_path} using model: {WHISPER_MODEL}")
+def transcribe_audio(audio_path: str, language_code: str = DEFAULT_LANGUAGE) -> dict:
+    lang_info = SUPPORTED_LANGUAGES.get(language_code, SUPPORTED_LANGUAGES[DEFAULT_LANGUAGE])
+    whisper_code = lang_info.get("whisper_code", "en")
+    logger.info(f"Transcribing audio: {audio_path} using model: {WHISPER_MODEL} with language: {whisper_code}")
 
     with open(audio_path, "rb") as audio_file:
         transcription = client.audio.transcriptions.create(
             file=audio_file,
             model=WHISPER_MODEL,
-            language=TARGET_LANGUAGE_CODE,
+            language=whisper_code,
             response_format="json",
             temperature=0.0,
         )

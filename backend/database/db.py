@@ -43,6 +43,10 @@ def initialize_database() -> None:
             conn.execute("ALTER TABLE sessions ADD COLUMN vocabulary_score INTEGER DEFAULT 8")
         if "confidence_score" not in columns:
             conn.execute("ALTER TABLE sessions ADD COLUMN confidence_score INTEGER DEFAULT 8")
+        if "language" not in columns:
+            conn.execute("ALTER TABLE sessions ADD COLUMN language TEXT DEFAULT 'en'")
+        if "english_translation" not in columns:
+            conn.execute("ALTER TABLE sessions ADD COLUMN english_translation TEXT DEFAULT ''")
 
         conn.commit()
         logger.info(f"Database initialized at: {DB_PATH}")

@@ -19,9 +19,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // During dev: /api requests → http://localhost:8000/api
+      // During dev: /api requests → http://localhost:8001/api
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
     },
